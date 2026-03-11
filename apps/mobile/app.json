@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "NutriMeals",
+    "slug": "nutrimeals",
+    "scheme": "nutrimeals",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/branding/icon-1024.png",
+    "splash": {
+      "image": "./assets/branding/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f7fbfa"
+    },
+    "android": {
+      "package": "com.nutrimeals.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/branding/adaptive-icon.png",
+        "backgroundColor": "#f6f9f5"
+      }
+    }
+  }
+}

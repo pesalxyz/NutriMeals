@@ -1,0 +1,26 @@
+{
+  "name": "nutriscan-ai",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:api": "pnpm --filter @nutriscan/api dev",
+    "dev:web": "pnpm --filter @nutriscan/web dev",
+    "dev:mobile": "pnpm --filter @nutriscan/mobile dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm --filter @nutriscan/api prisma migrate dev",
+    "db:seed": "pnpm --filter @nutriscan/api prisma db seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}

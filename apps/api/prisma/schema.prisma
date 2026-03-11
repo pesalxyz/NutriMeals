@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum ActivityLevel {
+  sedentary
+  light
+  moderate
+  active
+  very_active
+}
+
+enum GoalType {
+  lose_weight
+  maintain
+  gain_weight
+  healthy_eating
+}
+
+enum MealCategory {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+enum ScanStatus {
+  uploaded
+  processed
+  saved
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String?
+  googleSub    String?     @unique
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  profile      UserProfile?
+  goals        UserGoal?
+  scans        Scan[]
+  mealEntries  MealEntry[]
+}
+
+model UserProfile {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  fullName      String
+  age           Int
+  gender        Gender
+  weightKg      Float
+  heightCm      Float
+  activityLevel ActivityLevel
+  goal          GoalType
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserGoal {
+  id       String @id @default(cuid())
+  userId   String @unique
+  calories Float
+  protein  Float
+  carbs    Float
+  fat      Float
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FoodItem {
+  id            String          @id @default(cuid())
+  name          String
+  normalizedKey String          @unique
+  aliases       String[]
+  category      String?
+  defaultUnit   PortionUnitCode
+  nutrition     FoodNutrition?
+  mealItems     MealItem[]
+}
+
+model FoodNutrition {
+  id          String   @id @default(cuid())
+  foodItemId  String   @unique
+  basisGrams  Float    @default(100)
+  calories    Float
+  protein     Float
+  fat         Float
+  carbs       Float
+  sugar       Float
+  fiber       Float
+  sodium      Float
+  foodItem    FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+}
+
+model Scan {
+  id                  String      @id @default(cuid())
+  userId              String
+  imageUrl            String
+  status              ScanStatus  @default(uploaded)
+  recognitionProvider String
+  visionDescription   String?
+  nutritionInference  Json?
+  nutritionResult     Json?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items               ScanItem[]
+  mealEntry           MealEntry?
+}
+
+model ScanItem {
+  id             String   @id @default(cuid())
+  scanId         String
+  predictedName  String
+  normalizedKey  String
+  confidence     Float
+  bboxX          Float?
+  bboxY          Float?
+  bboxWidth      Float?
+  bboxHeight     Float?
+  suggestedUnit  PortionUnitCode
+  createdAt      DateTime @default(now())
+  scan           Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+}
+
+model MealEntry {
+  id        String       @id @default(cuid())
+  userId    String
+  scanId    String?      @unique
+  category  MealCategory
+  eatenAt   DateTime
+  imageUrl  String?
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scan      Scan?        @relation(fields: [scanId], references: [id])
+  items     MealItem[]
+  snapshot  NutritionSnapshot?
+}
+
+model MealItem {
+  id            String          @id @default(cuid())
+  mealEntryId   String
+  foodItemId    String?
+  customName    String
+  normalizedKey String
+  unit          PortionUnitCode
+  quantity      Float
+  gramsResolved Float
+  isEstimated   Boolean         @default(true)
+  calories      Float
+  protein       Float
+  fat           Float
+  carbs         Float
+  sugar         Float
+  fiber         Float
+  sodium        Float
+  mealEntry     MealEntry       @relation(fields: [mealEntryId], references: [id], onDelete: Cascade)
+  foodItem      FoodItem?       @relation(fields: [foodItemId], references: [id])
+}
+
+model NutritionSnapshot {
+  id          String    @id @default(cuid())
+  mealEntryId String    @unique
+  calories    Float
+  protein     Float
+  fat         Float
+  carbs       Float
+  sugar       Float
+  fiber       Float
+  sodium      Float
+  createdAt   DateTime  @default(now())
+  mealEntry   MealEntry @relation(fields: [mealEntryId], references: [id], onDelete: Cascade)
+}
+
+enum PortionUnitCode {
+  gram
+  piece
+  bowl
+  plate
+  cup
+  tablespoon
+  teaspoon
+}
