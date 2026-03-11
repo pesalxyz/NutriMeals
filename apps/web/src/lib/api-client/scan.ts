@@ -1,4 +1,4 @@
-import type { ScanProcessResponse } from '@nutriscan/types';
+import type { ScanProcessResponse } from '../contracts';
 import { apiFetch } from './client';
 
 export interface EditableItemInput {

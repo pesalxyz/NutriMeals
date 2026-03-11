@@ -1,4 +1,4 @@
-import type { GoogleAuthRequest } from '@nutriscan/types';
+import type { GoogleAuthRequest } from '../contracts';
 import { apiFetch } from './client';
 
 export function loginWithGoogle(payload: GoogleAuthRequest) {

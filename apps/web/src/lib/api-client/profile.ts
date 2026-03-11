@@ -1,4 +1,4 @@
-import type { ProfileInput } from '@nutriscan/types';
+import type { ProfileInput } from '../contracts';
 import { apiFetch } from './client';
 
 export type ProfilePayload = ProfileInput & {

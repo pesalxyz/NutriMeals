@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppNav } from '../../../components/nav';
 import { estimateScan } from '../../../lib/api-client/scan';
 import { saveMeal } from '../../../lib/api-client/meals';
-import type { ScanProcessResponse } from '@nutriscan/types';
+import type { ScanProcessResponse } from '../../../lib/contracts';
 import { Card } from '../../../components/ui/card';
 import { SectionHeader } from '../../../components/ui/section-header';
 import { Badge } from '../../../components/ui/badge';
