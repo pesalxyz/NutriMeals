@@ -19,9 +19,9 @@ async function bootstrap() {
   app.useGlobalFilters(new AppExceptionFilter());
   app.useStaticAssets(join(process.cwd(), process.env.LOCAL_UPLOAD_DIR ?? 'apps/api/uploads'), { prefix: '/uploads' });
 
-  const port = Number(process.env.API_PORT ?? 4000);
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
   await app.listen(port);
-  console.log(`NutriMeals API running on http://localhost:${port}`);
+  console.log(`NutriMeals API running on port ${port}`);
 }
 
 bootstrap();

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "nest build",
-    "start": "node dist/apps/api/src/main.js",
+    "start": "node dist/main.js",
     "lint": "echo 'lint not configured'",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
