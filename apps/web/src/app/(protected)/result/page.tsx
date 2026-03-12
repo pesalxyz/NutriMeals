@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppNav } from '../../../components/nav';
 import { estimateScan } from '../../../lib/api-client/scan';
+import type { EditableItemInput } from '../../../lib/api-client/scan';
 import { saveMeal } from '../../../lib/api-client/meals';
 import type { ScanProcessResponse } from '../../../lib/contracts';
 import { Card } from '../../../components/ui/card';
@@ -275,11 +276,12 @@ function dedupeLines(lines: string[]): string[] {
   return out.slice(0, 6);
 }
 
-function normalizeItems(items: Editable[]): Editable[] {
+function normalizeItems(items: Editable[]): EditableItemInput[] {
   return items
     .map((item) => ({
-      ...item,
       name: item.name.trim(),
+      normalizedKey: item.normalizedKey,
+      unit: item.unit,
       quantity: Number(item.quantity)
     }))
     .filter((item) => item.name.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
