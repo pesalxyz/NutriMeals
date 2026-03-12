@@ -193,7 +193,7 @@ export default function ResultPage() {
         </select>
         <div className="action-row">
           <Button variant="secondary" className="fill" onClick={estimate}>Estimasi</Button>
-          <Button className="fill" onClick={save} disabled={!items.length}>Simpan makanan</Button>
+          <Button className="fill cta-button" onClick={save} disabled={!items.length}>Simpan makanan</Button>
         </div>
       </Card>
     </main>

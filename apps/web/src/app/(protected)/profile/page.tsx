@@ -134,6 +134,7 @@ export default function ProfilePage() {
         </div>
 
         <Button
+          className="cta-button"
           onClick={async () => {
             await upsertProfile(form);
             setStatus('Tersimpan');

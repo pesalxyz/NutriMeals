@@ -85,7 +85,6 @@ export default function LoginPage() {
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={() => setScriptReady(true)} />
       <section className="card glass auth-card">
         <BrandLogo variant="full" />
-        <h1 className="brand-title">NutriMeals</h1>
         <p className="small auth-tagline">Scan. Eat. Know.</p>
         <p className="small auth-copy">Analisis nutrisi makanan berbasis AI dengan hasil yang bisa diedit.</p>
         <hr className="subtle-divider" />

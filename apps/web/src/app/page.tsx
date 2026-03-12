@@ -6,13 +6,12 @@ export default function LandingPage() {
     <main className="row landing-wrap">
       <section className="card">
         <BrandLogo variant="full" />
-        <h1 className="landing-title">NutriMeals</h1>
         <p>
-          Pemindai nutrisi berbasis AI untuk mencatat makanan lebih cepat. Unggah foto makanan, tinjau hasil deteksi,
-          atur porsi, lalu pantau asupan harian.
+          Catat makanan lebih cepat dengan AI. Foto makananmu, cek analisis nutrisinya, sesuaikan porsi, dan pantau
+          asupan harian dengan mudah.
         </p>
-        <p className="small">Nilai nutrisi bersifat estimasi dan bisa diubah sebelum disimpan.</p>
-        <p className="small">Masuk menggunakan akun Google yang email-nya terverifikasi.</p>
+        <p className="small">Nilai nutrisi merupakan estimasi dan dapat diubah sebelum disimpan.</p>
+        <p className="small">Login dengan akun Google yang emailnya sudah terverifikasi.</p>
       </section>
       <Link href="/login" className="button landing-cta">
         Lanjutkan dengan Google

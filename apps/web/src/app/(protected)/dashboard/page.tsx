@@ -26,7 +26,7 @@ export default function DashboardPage() {
           subtitle="Ringkasan nutrisi AI Anda. Total harian dihitung dari komponen makanan yang sudah disimpan."
           action={
             <Link href="/scan" className="w-168">
-              <Button>Scan Sekarang</Button>
+              <Button className="cta-button">Scan Sekarang</Button>
             </Link>
           }
         />
@@ -43,7 +43,7 @@ export default function DashboardPage() {
             <p className="calorie-value">
               {Math.round(data.totals.calories)} <span className="calorie-target">/ {Math.round(data.targets.calories)} kcal</span>
             </p>
-            <div className="progress"><span style={{ width: `${Math.min(100, data.progress.calories)}%` }} /></div>
+            <div className="progress progress--calories"><span style={{ width: `${Math.min(100, data.progress.calories)}%` }} /></div>
           </>
         )}
       </Card>
@@ -53,10 +53,10 @@ export default function DashboardPage() {
         <h3 className="section-title-sm">Ringkasan makro</h3>
         {!data ? <Spinner label="Memuat makro..." /> : (
           <div className="kpi-grid">
-            <div className="kpi"><h4>Protein</h4><p>{Math.round(data.totals.protein)}g</p></div>
-            <div className="kpi"><h4>Karbo</h4><p>{Math.round(data.totals.carbs)}g</p></div>
-            <div className="kpi"><h4>Lemak</h4><p>{Math.round(data.totals.fat)}g</p></div>
-            <div className="kpi"><h4>Gula</h4><p>{Math.round(data.totals.sugar)}g</p></div>
+            <div className="kpi macro-card macro-card--protein"><h4>Protein</h4><p>{Math.round(data.totals.protein)}g</p></div>
+            <div className="kpi macro-card macro-card--carbs"><h4>Karbo</h4><p>{Math.round(data.totals.carbs)}g</p></div>
+            <div className="kpi macro-card macro-card--fat"><h4>Lemak</h4><p>{Math.round(data.totals.fat)}g</p></div>
+            <div className="kpi macro-card macro-card--sugar"><h4>Gula</h4><p>{Math.round(data.totals.sugar)}g</p></div>
           </div>
         )}
       </Card>
@@ -73,7 +73,7 @@ export default function DashboardPage() {
               <div className="small">
                 {macroLabel(macro.key)}: {Math.round(macro.total)} / {Math.round(macro.target)}g
               </div>
-              <div className="progress"><span style={{ width: `${Math.min(100, macro.progress)}%` }} /></div>
+              <div className={`progress progress--${macro.key}`}><span style={{ width: `${Math.min(100, macro.progress)}%` }} /></div>
             </div>
           ))
         ) : (
@@ -92,7 +92,7 @@ export default function DashboardPage() {
         )) : (
           <EmptyState
             title="Belum ada makanan"
-            description="Mulai scan makanan pertama Anda untuk membuat riwayat nutrisi harian."
+            description="Belum ada makanan yang tercatat hari ini. Mulai dengan memindai makanan pertama Anda."
             action={<Link href="/scan"><Button variant="secondary">Scan makanan</Button></Link>}
           />
         )}

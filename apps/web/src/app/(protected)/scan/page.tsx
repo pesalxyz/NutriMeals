@@ -79,7 +79,7 @@ export default function ScanPage() {
                 <p className="small m-0">Pratinjau kamera akan tampil di sini</p>
               </div>
             </div>
-            <Button onClick={() => cameraInputRef.current?.click()}>Ambil foto</Button>
+            <Button className="cta-button" onClick={() => cameraInputRef.current?.click()}>Ambil foto</Button>
             <Button variant="secondary" onClick={() => uploadInputRef.current?.click()}>Unggah gambar</Button>
           </>
         ) : (
@@ -95,7 +95,7 @@ export default function ScanPage() {
             </div>
             <div className="action-row">
               <Button variant="secondary" className="fill" onClick={resetSelection}>Foto ulang</Button>
-              <Button className="fill" onClick={runScan} disabled={loading}>
+              <Button className="fill cta-button" onClick={runScan} disabled={loading}>
                 {loading ? 'Menganalisis makanan Anda...' : 'Analisis scan'}
               </Button>
             </div>
