@@ -36,6 +36,9 @@ export default function ResultPage() {
   const [notes, setNotes] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [uncertaintyNotes, setUncertaintyNotes] = useState<string[]>([]);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [actionError, setActionError] = useState('');
   const sugarTotal = estimatedItems.reduce((sum, item) => sum + item.nutrition.sugar, 0);
   const displayNotes = dedupeLines([description, ...notes]);
 
@@ -83,34 +86,62 @@ export default function ResultPage() {
   }, [router]);
 
   async function estimate() {
-    const result = await estimateScan(items, scanId);
-    setEstimatedItems(result.items.map((x) => ({ isEstimated: x.isEstimated, gramsResolved: x.gramsResolved, nutrition: x.nutrition })));
-    setTotals({
-      calories: result.totals.calories,
-      protein: result.totals.protein,
-      carbs: result.totals.carbs,
-      fat: result.totals.fat
-    });
+    const cleaned = normalizeItems(items);
+    if (!cleaned.length) {
+      setActionError('Tambahkan minimal satu komponen valid sebelum estimasi.');
+      return;
+    }
+
+    setEstimateLoading(true);
+    setActionError('');
+    try {
+      const result = await estimateScan(cleaned, scanId);
+      setEstimatedItems(result.items.map((x) => ({ isEstimated: x.isEstimated, gramsResolved: x.gramsResolved, nutrition: x.nutrition })));
+      setTotals({
+        calories: result.totals.calories,
+        protein: result.totals.protein,
+        carbs: result.totals.carbs,
+        fat: result.totals.fat
+      });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Estimasi gagal diproses. Coba lagi.');
+    } finally {
+      setEstimateLoading(false);
+    }
   }
 
   async function save() {
-    const result = await estimateScan(items, scanId);
-    await saveMeal({
-      scanId,
-      category,
-      eatenAt: new Date().toISOString(),
-      imageUrl,
-      items: result.items.map((item) => ({
-        name: item.name,
-        normalizedKey: item.normalizedKey,
-        unit: item.portion.unit,
-        quantity: item.portion.quantity,
-        gramsResolved: item.gramsResolved,
-        isEstimated: item.isEstimated,
-        ...item.nutrition
-      }))
-    });
-    router.push('/dashboard');
+    const cleaned = normalizeItems(items);
+    if (!cleaned.length) {
+      setActionError('Tambahkan minimal satu komponen valid sebelum menyimpan.');
+      return;
+    }
+
+    setSaveLoading(true);
+    setActionError('');
+    try {
+      const result = await estimateScan(cleaned, scanId);
+      await saveMeal({
+        scanId,
+        category,
+        eatenAt: new Date().toISOString(),
+        imageUrl,
+        items: result.items.map((item) => ({
+          name: item.name,
+          normalizedKey: item.normalizedKey,
+          unit: item.portion.unit,
+          quantity: item.portion.quantity,
+          gramsResolved: item.gramsResolved,
+          isEstimated: item.isEstimated,
+          ...item.nutrition
+        }))
+      });
+      router.push('/dashboard');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Simpan makanan gagal. Coba lagi.');
+    } finally {
+      setSaveLoading(false);
+    }
   }
 
   return (
@@ -192,9 +223,14 @@ export default function ResultPage() {
           <option value="snack">Camilan</option>
         </select>
         <div className="action-row">
-          <Button variant="secondary" className="fill" onClick={estimate}>Estimasi</Button>
-          <Button className="fill cta-button" onClick={save} disabled={!items.length}>Simpan makanan</Button>
+          <Button variant="secondary" className="fill" onClick={estimate} disabled={!items.length || estimateLoading || saveLoading}>
+            {estimateLoading ? 'Menghitung...' : 'Estimasi'}
+          </Button>
+          <Button className="fill cta-button" onClick={save} disabled={!items.length || estimateLoading || saveLoading}>
+            {saveLoading ? 'Menyimpan...' : 'Simpan makanan'}
+          </Button>
         </div>
+        {actionError ? <p className="error m-0">{actionError}</p> : null}
       </Card>
     </main>
   );
@@ -237,4 +273,14 @@ function dedupeLines(lines: string[]): string[] {
     if (!duplicate) out.push(next);
   }
   return out.slice(0, 6);
+}
+
+function normalizeItems(items: Editable[]): Editable[] {
+  return items
+    .map((item) => ({
+      ...item,
+      name: item.name.trim(),
+      quantity: Number(item.quantity)
+    }))
+    .filter((item) => item.name.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
 }
