@@ -41,6 +41,11 @@ enum ScanStatus {
   saved
 }
 
+enum ApiKeyStatus {
+  active
+  inactive
+}
+
 model User {
   id           String      @id @default(cuid())
   email        String      @unique
@@ -52,6 +57,7 @@ model User {
   goals        UserGoal?
   scans        Scan[]
   mealEntries  MealEntry[]
+  apiKeys      ApiKey[]
 }
 
 model UserProfile {
@@ -180,6 +186,34 @@ model NutritionSnapshot {
   sodium      Float
   createdAt   DateTime  @default(now())
   mealEntry   MealEntry @relation(fields: [mealEntryId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String        @id @default(cuid())
+  ownerId     String
+  name        String
+  keyPrefix   String        @unique
+  keyHash     String
+  status      ApiKeyStatus  @default(active)
+  usageCount  Int           @default(0)
+  createdAt   DateTime      @default(now())
+  lastUsedAt  DateTime?
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  usageLogs   ApiUsageLog[]
+}
+
+model ApiUsageLog {
+  id           String   @id @default(cuid())
+  apiKeyId     String
+  endpoint     String
+  method       String
+  statusCode   Int
+  durationMs   Int?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@index([apiKeyId, createdAt])
 }
 
 enum PortionUnitCode {

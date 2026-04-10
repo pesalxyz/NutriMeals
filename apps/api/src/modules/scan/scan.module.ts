@@ -33,6 +33,6 @@ import { ScanResultService } from './scan-result.service';
     FoodComponentDetector,
     ConfidenceResolver
   ],
-  exports: [NutritionEstimationService]
+  exports: [NutritionEstimationService, ScanResultService]
 })
 export class ScanModule {}

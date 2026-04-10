@@ -8,6 +8,8 @@ import { MealsModule } from './modules/meals/meals.module';
 import { HistoryModule } from './modules/history/history.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { UsersModule } from './modules/users/users.module';
+import { PublicApiModule } from './modules/public-api/public-api.module';
+import { DeveloperKeysModule } from './modules/developer-keys/developer-keys.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { UsersModule } from './modules/users/users.module';
     ProfileModule,
     UsersModule,
     ScanModule,
+    PublicApiModule,
+    DeveloperKeysModule,
     MealsModule,
     HistoryModule,
     DashboardModule

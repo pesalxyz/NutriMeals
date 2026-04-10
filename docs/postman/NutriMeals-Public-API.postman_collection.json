@@ -1,0 +1,118 @@
+{
+  "info": {
+    "name": "NutriMeals Public API Demo",
+    "_postman_id": "3e4f8bde-42a7-4d0a-9592-2a6d6832a123",
+    "description": "Collection untuk demo endpoint Public API NutriMeals (API key + analyze-food).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://your-api-domain" },
+    { "key": "jwtToken", "value": "" },
+    { "key": "publicApiKey", "value": "" },
+    { "key": "developerKeyId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Create Developer Key",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"demo-kampus\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/developer/keys",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "developer", "keys"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 201/200', function () {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+              "});",
+              "const data = pm.response.json();",
+              "if (data && data.key) { pm.collectionVariables.set('publicApiKey', data.key); }",
+              "if (data && data.id) { pm.collectionVariables.set('developerKeyId', data.id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Developer Keys",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}", "type": "text" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/developer/keys",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "developer", "keys"]
+        }
+      }
+    },
+    {
+      "name": "Disable Developer Key",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwtToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"inactive\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/developer/keys/{{developerKeyId}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "developer", "keys", "{{developerKeyId}}", "status"]
+        }
+      }
+    },
+    {
+      "name": "Public Analyze Food",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-api-key", "value": "{{publicApiKey}}", "type": "text" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "image",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/public/v1/analyze-food",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "public", "v1", "analyze-food"]
+        }
+      }
+    }
+  ]
+}
