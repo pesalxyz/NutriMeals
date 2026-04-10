@@ -16,11 +16,13 @@ export class PublicApiAuthService {
     }
 
     const keyParts = rawApiKey.split('_');
-    if (keyParts.length < 3) {
+    // format: nm_live_<identifier>_<secret...>
+    // secret may contain underscores, so prefix must include first 3 segments.
+    if (keyParts.length < 4) {
       return { ok: false, statusCode: 401, message: 'Invalid API key' };
     }
 
-    const keyPrefix = keyParts.slice(0, 2).join('_');
+    const keyPrefix = keyParts.slice(0, 3).join('_');
     const apiKey = await this.prisma.apiKey.findUnique({ where: { keyPrefix } });
 
     if (!apiKey) {
