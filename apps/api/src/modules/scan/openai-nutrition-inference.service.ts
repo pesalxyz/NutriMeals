@@ -38,14 +38,20 @@ export class OpenAINutritionInferenceService {
   private readonly logger = new Logger(OpenAINutritionInferenceService.name);
 
   async infer(input: VisionDescriptionResult, imagePath?: string): Promise<NutritionInferenceResult | null> {
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    const apiKey = process.env.LLM_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim();
     if (!apiKey) return null;
 
-    const model = process.env.OPENAI_NUTRITION_MODEL?.trim() || process.env.OPENAI_VISION_MODEL?.trim() || 'gpt-4.1-mini';
+    const model =
+      process.env.LLM_NUTRITION_MODEL?.trim() ||
+      process.env.OPENAI_NUTRITION_MODEL?.trim() ||
+      process.env.LLM_VISION_MODEL?.trim() ||
+      process.env.OPENAI_VISION_MODEL?.trim() ||
+      process.env.LLM_MODEL?.trim() ||
+      'gpt-4.1-mini';
     const prompt = buildPrompt(input);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(resolveChatCompletionsUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,14 +142,18 @@ export class OpenAINutritionInferenceService {
     const imageBuffer = await readFile(imagePath);
     const dataUrl = `data:${mimeFromExtension(imagePath)};base64,${imageBuffer.toString('base64')}`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(resolveChatCompletionsUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_VISION_MODEL?.trim() || 'gpt-4.1-mini',
+        model:
+          process.env.LLM_VISION_MODEL?.trim() ||
+          process.env.OPENAI_VISION_MODEL?.trim() ||
+          process.env.LLM_MODEL?.trim() ||
+          'gpt-4.1-mini',
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -191,12 +201,17 @@ function buildPrompt(input: VisionDescriptionResult): string {
     'Gunakan penalaran konservatif di level komponen dan gunakan Bahasa Indonesia.',
     'Untuk makanan campur, inferensikan komponen hanya jika didukung deskripsi/kandidat.',
     'Aturan realisme porsi:',
+    '- Untuk makanan berunit piece, jumlah piece harus sesuai jumlah objek yang benar-benar terlihat, bukan tebakan agresif.',
+    '- Jika terlihat satu potong ayam utuh (mis. paha/drumstick/wing/breast), gunakan 1 piece. Maksimal 2 piece jika memang terlihat 2 potong terpisah.',
+    '- Untuk telur rebus/telur utuh, default 1 piece kecuali terlihat lebih dari satu telur.',
+    '- Untuk ikan utuh/filet besar, default 1 piece kecuali jelas ada beberapa potong.',
     '- Jangan keluarkan porsi utama padat yang sangat kecil seperti 1-5 gram.',
     '- Untuk mie yang terlihat jelas, default 80-180g dan pakai satuan mangkuk/piring kecuali benar-benar kecil.',
     '- Untuk ayam goreng potongan, gunakan satuan potong dengan hitungan wajar (mis. 4-10 potong) dan gram yang realistis.',
     '- Untuk sate, hitung tusuk yang terlihat dan set jumlah piece sesuai hitungan visual. Pakai 10-20g per tusuk (default 15g).',
     '- Untuk saus/kondimen (bumbu kacang, sambal, kuah), JANGAN pakai satuan piece. Gunakan sendok makan/gram.',
     '- Hanya gunakan < 15g jika memang jejak saus sangat sedikit.',
+    '- Jika ragu terhadap jumlah potongan, pilih estimasi konservatif (lebih sedikit) dan turunkan confidence.',
     'Utamakan komponen Indonesia jika didukung: nasi putih, nasi padang, nasi campur, ayam goreng, ayam gulai, rendang, telur rebus, telur balado, telur dadar, sambal merah/hijau, daun singkong, sayur hijau, kuah gulai, kerupuk, tempe, tahu, es teh, jus jeruk.',
     'Hindari makanan barat acak kecuali ada bukti kuat.',
     'Kembalikan JSON valid saja dengan bentuk:',
@@ -283,4 +298,9 @@ function mimeFromExtension(pathname: string): string {
   if (ext === '.png') return 'image/png';
   if (ext === '.webp') return 'image/webp';
   return 'image/jpeg';
+}
+
+function resolveChatCompletionsUrl(): string {
+  const base = (process.env.LLM_BASE_URL?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  return `${base}/chat/completions`;
 }

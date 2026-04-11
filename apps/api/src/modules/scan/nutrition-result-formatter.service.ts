@@ -23,7 +23,9 @@ export class NutritionResultFormatter {
 
     if (!components.length) return null;
 
-    const totalNutrition = normalizeNutrition(input.totalNutrition) ?? sumNutrition(components.map((item) => item.nutrition));
+    // Always derive totals from normalized components so post-processing corrections
+    // (e.g. chicken piece count normalization) are reflected in final totals.
+    const totalNutrition = sumNutrition(components.map((item) => item.nutrition));
 
     return {
       mealType: normalizeMealType(input.mealType),
@@ -70,13 +72,24 @@ export class NutritionResultFormatter {
     unit = satayAdjusted.unit;
     quantity = satayAdjusted.quantity;
     grams = satayAdjusted.grams;
-    const solidAdjusted = adjustTinySolidPortion({
+    const pieceAdjusted = adjustPiecePortionGeneral({
       name: component.name,
       notes: typeof component.notes === 'string' ? component.notes : '',
       unit,
       quantity,
       grams,
       nutrition: satayAdjusted.nutrition
+    });
+    unit = pieceAdjusted.unit;
+    quantity = pieceAdjusted.quantity;
+    grams = pieceAdjusted.grams;
+    const solidAdjusted = adjustTinySolidPortion({
+      name: component.name,
+      notes: typeof component.notes === 'string' ? component.notes : '',
+      unit,
+      quantity,
+      grams,
+      nutrition: pieceAdjusted.nutrition
     });
     unit = solidAdjusted.unit;
     quantity = solidAdjusted.quantity;
@@ -320,9 +333,22 @@ function adjustTinySolidPortion(input: {
   }
 
   if (isProteinPieceLike(text)) {
-    const count = extractPieceCount(text) ?? (/(ayam|chicken|fried chicken)/.test(text) ? 6 : 3);
+    const explicitCount = extractPieceCount(text);
+    const looksWholeChickenCut = isWholeChickenCutLike(text);
+    const count = explicitCount ?? (looksWholeChickenCut ? 1 : /(ayam|chicken|fried chicken)/.test(text) ? 4 : 3);
     const targetGrams = Math.max(input.grams, count * 25);
     const ratio = input.grams > 0 ? targetGrams / input.grams : 1;
+    if (looksWholeChickenCut && !isSmallChunkLike(text)) {
+      const normalizedCount = Math.min(2, Math.max(1, count));
+      const normalizedGrams = clampNumber(input.grams, normalizedCount * 80, normalizedCount * 70, normalizedCount * 170);
+      const normalizedRatio = input.grams > 0 ? normalizedGrams / input.grams : 1;
+      return {
+        unit: 'piece',
+        quantity: normalizedCount,
+        grams: normalizedGrams,
+        nutrition: scaleNutrition(input.nutrition, normalizedRatio)
+      };
+    }
     if (isSmallChunkLike(text) && /(ayam|chicken|fried chicken)/.test(text)) {
       return {
         unit: 'gram',
@@ -347,6 +373,73 @@ function adjustTinySolidPortion(input: {
     grams: targetGrams,
     nutrition: scaleNutrition(input.nutrition, ratio)
   };
+}
+
+function adjustPiecePortionGeneral(input: {
+  name: string;
+  notes: string;
+  unit: PortionUnitCode;
+  quantity: number;
+  grams: number;
+  nutrition: NutritionValues;
+}): {
+  unit: PortionUnitCode;
+  quantity: number;
+  grams: number;
+  nutrition: NutritionValues;
+} {
+  const text = `${input.name} ${input.notes}`.toLowerCase();
+  if (isSauceLike(text) || isDrinkLike(text) || isSatayLike(text)) return input;
+  if (!isProteinPieceLike(text) && input.unit !== 'piece') return input;
+
+  const explicitCount = extractPieceCount(text);
+
+  // Whole-cut proteins are often over-counted by the model as many pieces.
+  if (isWholeChickenCutLike(text) || isWholeFishLike(text)) {
+    const normalizedCount = explicitCount ? Math.min(2, Math.max(1, explicitCount)) : 1;
+    const sourceCount = input.unit === 'piece' ? Math.max(1, Math.round(input.quantity)) : Math.max(1, normalizedCount);
+    const sourcePerPiece = input.grams / sourceCount;
+    const targetPerPiece = clampNumber(sourcePerPiece, 120, 70, 170);
+    const normalizedGrams = round2(normalizedCount * targetPerPiece);
+    const ratio = input.grams > 0 ? normalizedGrams / input.grams : 1;
+    return {
+      unit: 'piece',
+      quantity: normalizedCount,
+      grams: normalizedGrams,
+      nutrition: scaleNutrition(input.nutrition, ratio)
+    };
+  }
+
+  if (isEggLike(text)) {
+    const count = explicitCount ? Math.min(3, Math.max(1, explicitCount)) : 1;
+    const normalizedGrams = round2(count * 55);
+    const ratio = input.grams > 0 ? normalizedGrams / input.grams : 1;
+    return {
+      unit: 'piece',
+      quantity: count,
+      grams: normalizedGrams,
+      nutrition: scaleNutrition(input.nutrition, ratio)
+    };
+  }
+
+  if (input.unit === 'piece') {
+    const count = explicitCount ?? Math.max(1, Math.round(input.quantity));
+    const normalizedCount = Math.min(12, Math.max(1, count));
+    const minPerPiece = isSmallChunkLike(text) ? 12 : 20;
+    const maxPerPiece = isSmallChunkLike(text) ? 40 : 80;
+    const sourcePerPiece = input.grams / Math.max(1, normalizedCount);
+    const normalizedPerPiece = clampNumber(sourcePerPiece, (minPerPiece + maxPerPiece) / 2, minPerPiece, maxPerPiece);
+    const normalizedGrams = round2(normalizedCount * normalizedPerPiece);
+    const ratio = input.grams > 0 ? normalizedGrams / input.grams : 1;
+    return {
+      unit: 'piece',
+      quantity: normalizedCount,
+      grams: normalizedGrams,
+      nutrition: scaleNutrition(input.nutrition, ratio)
+    };
+  }
+
+  return input;
 }
 
 function extractSkewerCount(text: string): number | null {
@@ -402,6 +495,10 @@ function isSmallChunkLike(text: string): boolean {
   return /(small pieces?|chunks?|chunked|bite-?sized|potongan kecil|irisan kecil|diced)/.test(text);
 }
 
+function isWholeChickenCutLike(text: string): boolean {
+  return /(paha|drumstick|thigh|leg quarter|quarter chicken|sayap|wing|dada|breast|paha bawah|paha atas)/.test(text);
+}
+
 function extractPieceCount(text: string): number | null {
   const patterns = [
     /(\d{1,2})\s*(piece|pieces|pcs|potong|chunks?|small pieces)/,
@@ -417,8 +514,20 @@ function extractPieceCount(text: string): number | null {
   return null;
 }
 
+function isSatayLike(text: string): boolean {
+  return /(satay|sate|skewer|tusuk)/.test(text);
+}
+
+function isEggLike(text: string): boolean {
+  return /(telur|egg)/.test(text);
+}
+
+function isWholeFishLike(text: string): boolean {
+  return /(ikan utuh|whole fish|fish fillet|fillet ikan|filet ikan)/.test(text);
+}
+
 function scaleNutrition(base: NutritionValues, ratio: number): NutritionValues {
-  const safeRatio = Math.max(1, Math.min(40, ratio));
+  const safeRatio = Math.max(0.1, Math.min(40, ratio));
   return {
     calories: round2(base.calories * safeRatio),
     protein: round2(base.protein * safeRatio),

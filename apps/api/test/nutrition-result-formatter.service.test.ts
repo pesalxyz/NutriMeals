@@ -194,4 +194,56 @@ describe('NutritionResultFormatter', () => {
     expect(noodle?.suggestedQuantity).toBe(1);
     expect((noodle?.estimatedWeightGrams ?? 0) >= 100).toBe(true);
   });
+
+  it('normalizes overcounted whole chicken cut from many pieces to 1-2 pieces', () => {
+    const result = formatter.format({
+      mealType: 'mixed_plate',
+      summary: 'Nasi putih dengan satu ayam paha rebus.',
+      components: [
+        {
+          name: 'ayam paha rebus',
+          normalizedKey: 'ayam_rebus',
+          portion: { amount: 6, unit: 'piece' },
+          estimatedWeightGrams: 180,
+          confidence: 0.93,
+          nutrition: { calories: 548, protein: 36.3, fat: 19.6, carbs: 56, sugar: 1, fiber: 0, sodium: 480 },
+          notes: 'single drumstick visible on plate'
+        }
+      ],
+      totalNutrition: { calories: 548, protein: 36.3, fat: 19.6, carbs: 56, sugar: 1, fiber: 0, sodium: 480 },
+      uncertaintyNotes: []
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.components[0]?.suggestedUnit).toBe('piece');
+    expect((result?.components[0]?.suggestedQuantity ?? 0) <= 2).toBe(true);
+    expect((result?.components[0]?.estimatedWeightGrams ?? 0) <= 340).toBe(true);
+    expect((result?.totalNutrition.calories ?? 0) < 548).toBe(true);
+  });
+
+  it('keeps egg portions conservative when piece count is overpredicted', () => {
+    const result = formatter.format({
+      mealType: 'mixed_plate',
+      summary: 'Telur rebus terlihat satu butir.',
+      components: [
+        {
+          name: 'telur rebus',
+          normalizedKey: 'telur_rebus',
+          portion: { amount: 5, unit: 'piece' },
+          estimatedWeightGrams: 250,
+          confidence: 0.88,
+          nutrition: { calories: 390, protein: 31, fat: 26, carbs: 3, sugar: 1, fiber: 0, sodium: 350 },
+          notes: 'one boiled egg visible'
+        }
+      ],
+      totalNutrition: { calories: 390, protein: 31, fat: 26, carbs: 3, sugar: 1, fiber: 0, sodium: 350 },
+      uncertaintyNotes: []
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.components[0]?.suggestedUnit).toBe('piece');
+    expect((result?.components[0]?.suggestedQuantity ?? 0) <= 3).toBe(true);
+    expect((result?.components[0]?.estimatedWeightGrams ?? 0) <= 165).toBe(true);
+    expect((result?.totalNutrition.calories ?? 0) < 390).toBe(true);
+  });
 });
