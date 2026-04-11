@@ -759,6 +759,36 @@ a:focus-visible {
   background: linear-gradient(90deg, #0ea5e9, #3b82f6);
 }
 
+.api-key-secret {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #b6d8cb;
+  background: rgba(255, 255, 255, 0.92);
+  overflow: auto;
+}
+
+.api-key-secret code {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.api-key-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.api-key-item {
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.api-key-actions {
+  margin-top: 4px;
+}
+
 @media (max-width: 720px) {
   .container {
     padding: 14px 12px 24px;

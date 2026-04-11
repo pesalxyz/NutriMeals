@@ -10,6 +10,7 @@ import { BrandLogo } from './brand-logo';
 const ITEMS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/scan', label: 'Scan' },
+  { href: '/api-keys', label: 'API Key' },
   { href: '/history', label: 'Riwayat' },
   { href: '/profile', label: 'Profil' }
 ];
