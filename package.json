@@ -12,6 +12,7 @@
     "dev:api": "pnpm --filter @nutriscan/api dev",
     "dev:web": "pnpm --filter @nutriscan/web dev",
     "dev:mobile": "pnpm --filter @nutriscan/mobile dev",
+    "dev:bot": "pnpm --filter @nutriscan/telegram-bot dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",

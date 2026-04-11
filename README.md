@@ -10,6 +10,7 @@ NutriMeals provides **AI-assisted nutrition estimates**. It is not a medical-gra
 - `apps/api`: NestJS REST API, Prisma, PostgreSQL
 - `apps/web`: Next.js mobile-first web app (optimized for iPhone Safari)
 - `apps/mobile`: Expo React Native app (Android installable path)
+- `apps/telegram-bot`: Telegram bot (TypeScript) that calls NutriMeals Public API
 - `packages/types`: Shared TypeScript contracts
 - `packages/domain`: Shared nutrition and portion logic
 - `packages/config`: Shared config templates
@@ -84,6 +85,7 @@ cp .env.example .env
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 cp apps/mobile/.env.example apps/mobile/.env
+cp apps/telegram-bot/.env.example apps/telegram-bot/.env
 ```
 
 3. Run migrations and seed
@@ -99,6 +101,7 @@ pnpm db:seed
 pnpm dev:api
 pnpm dev:web
 pnpm dev:mobile
+pnpm dev:bot
 ```
 
 Or run all:
