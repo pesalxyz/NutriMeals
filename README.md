@@ -1,68 +1,73 @@
 # NutriMeals (MVP)
 
-AI-assisted nutrition scanner MVP with one shared backend and shared business logic for web (iOS/mobile browser) and Android (Expo).
+NutriMeals adalah aplikasi **AI-assisted nutrition scanner** dengan backend bersama untuk web (iOS/mobile browser), Android (Expo), dan Telegram bot.
 
 ## Product positioning
-NutriMeals provides **AI-assisted nutrition estimates**. It is not a medical-grade diagnostic system.
+NutriMeals memberikan **estimasi nutrisi berbasis AI** (bukan diagnosis medis).
 
 ## Monorepo structure
 
-- `apps/api`: NestJS REST API, Prisma, PostgreSQL
-- `apps/web`: Next.js mobile-first web app (optimized for iPhone Safari)
-- `apps/mobile`: Expo React Native app (Android installable path)
-- `apps/telegram-bot`: Telegram bot (TypeScript) that calls NutriMeals Public API
-- `packages/types`: Shared TypeScript contracts
-- `packages/domain`: Shared nutrition and portion logic
-- `packages/config`: Shared config templates
+- `apps/api`: NestJS REST API + Prisma + PostgreSQL
+- `apps/web`: Next.js mobile-first web app
+- `apps/mobile`: Expo React Native app
+- `apps/telegram-bot`: Telegram bot (konsumsi Public API NutriMeals)
+- `packages/types`: shared TypeScript contracts
+- `packages/domain`: shared nutrition + portion logic
+- `packages/config`: shared config template
 
 ## Architecture overview
 
-- Auth: Google Sign-In (ID token) + JWT access token
-- Food recognition: `FoodRecognitionService` with adapter pattern
-  - MVP provider: `MockFoodRecognitionProvider`
-  - Real provider integration is intentionally not hardcoded yet
-- Nutrition engine: `NutritionEstimationService`
-  - Portion conversion with unit defaults
-  - Nutrition calculation from food database (or fallback estimate)
-  - `isEstimated` flag for uncertain mappings
-- Storage: `StorageService` abstraction
-  - Current driver: local filesystem
-  - Cloud storage adapter can be added behind the same interface
+- Auth: Google Sign-In (ID token) + JWT
+- Food recognition: `FoodRecognitionService` (provider adapter)
+  - Provider bisa `heuristic`, `openai`, atau `mock_fixed`
+  - `AI_PROVIDER=auto` memilih OpenAI jika API key tersedia, fallback ke heuristic
+- Nutrition inference: `OpenAINutritionInferenceService` + formatter guardrails
+- Storage: `StorageService` abstraction (default local filesystem)
+- Public API: API key system internal (`x-api-key`) untuk endpoint analyze-food
 
 ## Tech stack
 
 - Backend: NestJS + Prisma + PostgreSQL
 - Web: Next.js App Router + TypeScript
-- Mobile: Expo React Native + TypeScript
-- Shared logic: Workspace packages (`@nutriscan/types`, `@nutriscan/domain`)
+- Mobile: Expo + TypeScript
+- Shared logic: workspace packages (`@nutriscan/types`, `@nutriscan/domain`)
 
 ## Environment variables
 
-### Root (`.env.example`)
+Gunakan contoh dari:
+- Root: [`.env.example`](.env.example)
+- API: [`apps/api/.env.example`](apps/api/.env.example)
+
+### Variabel penting backend
 
 - `NODE_ENV`
+- `API_PORT`
 - `DATABASE_URL`
 - `JWT_SECRET`
 - `JWT_EXPIRES_IN`
-- `API_PORT`
 - `WEB_URL`
-- `MOBILE_APP_SCHEME`
+- `GOOGLE_OAUTH_CLIENT_IDS` (comma-separated)
 - `STORAGE_DRIVER`
 - `LOCAL_UPLOAD_DIR`
-- `GOOGLE_OAUTH_CLIENT_IDS` (comma-separated Google OAuth client IDs/audiences)
 - `AI_PROVIDER` (`auto` | `heuristic` | `openai` | `mock_fixed`)
-- `OPENAI_API_KEY` (optional, required for `AI_PROVIDER=openai`)
-- `OPENAI_VISION_MODEL` (optional, default `gpt-4.1-mini`)
-- `OPENAI_NUTRITION_MODEL` (optional, default `gpt-4.1-mini`)
-- `SCAN_LEGACY_COMPONENT_FALLBACK` (`false` recommended)
+- `LLM_BASE_URL` (default OpenAI-compatible)
+- `LLM_API_KEY`
+- `LLM_MODEL`
+- `LLM_VISION_MODEL`
+- `LLM_NUTRITION_MODEL`
+- `OPENAI_API_KEY` (backward compatibility)
+- `OPENAI_VISION_MODEL`
+- `OPENAI_NUTRITION_MODEL`
+- `SCAN_LEGACY_COMPONENT_FALLBACK`
+- `PUBLIC_API_RATE_LIMIT_PER_MINUTE`
 
-### Web (`apps/web/.env.example`)
+### Web (`apps/web/.env.local`)
 
 - `NEXT_PUBLIC_API_BASE_URL`
 - `NEXT_PUBLIC_APP_NAME`
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID`
 
-### Mobile (`apps/mobile/.env.example`)
+### Mobile (`apps/mobile/.env`)
 
 - `EXPO_PUBLIC_API_BASE_URL`
 - `EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID`
@@ -78,7 +83,7 @@ NutriMeals provides **AI-assisted nutrition estimates**. It is not a medical-gra
 pnpm install
 ```
 
-2. Configure environment files
+2. Copy env files
 
 ```bash
 cp .env.example .env
@@ -88,7 +93,7 @@ cp apps/mobile/.env.example apps/mobile/.env
 cp apps/telegram-bot/.env.example apps/telegram-bot/.env
 ```
 
-3. Run migrations and seed
+3. Database migrate + seed (local)
 
 ```bash
 pnpm db:migrate
@@ -104,7 +109,7 @@ pnpm dev:mobile
 pnpm dev:bot
 ```
 
-Or run all:
+Atau jalankan paralel:
 
 ```bash
 pnpm dev
@@ -112,46 +117,56 @@ pnpm dev
 
 ## Auth policy
 
-- Password login/register is disabled.
-- Users must sign in with Google.
-- Backend allows access only when:
-  - Google `email_verified = true`
+- Email/password flow dinonaktifkan
+- Login via Google
+- Backend hanya menerima Google token dengan `email_verified=true`
 
 ## Core API routes
 
 ### Auth
-
 - `POST /auth/google`
 - `POST /auth/logout`
 - `GET /auth/me`
 
 ### Profile
-
 - `GET /profile`
 - `PUT /profile`
 
-### Scan
-
+### Scan (authenticated app user)
 - `POST /scan/upload-image`
 - `POST /scan/process`
 - `POST /scan/estimate`
 
-`/scan/process` now returns one of:
-- `status: "success"` with detected items + auto nutrition estimate
-- `status: "uncertain"` with low-confidence suggestions for manual confirmation
-- `status: "no_food_detected"` with no nutrition payload
+`/scan/process` mengembalikan salah satu:
+- `status: "success"`
+- `status: "uncertain"`
+- `status: "no_food_detected"`
 
-### Meals and Tracking
-
+### Meals & tracking
 - `POST /meals`
 - `GET /meals/:id`
 - `GET /history?date=YYYY-MM-DD`
 - `GET /dashboard/daily-summary?date=YYYY-MM-DD`
 - `GET /dashboard/recent-scans`
 
+### Public API (API key based)
+- `POST /api/developer/keys`
+- `GET /api/developer/keys`
+- `PATCH /api/developer/keys/:id/status`
+- `POST /api/public/v1/analyze-food`
+
+Dokumentasi detail:
+- [`docs/public-api-analyze-food.md`](docs/public-api-analyze-food.md)
+- [`docs/public-api-deployment-readiness.md`](docs/public-api-deployment-readiness.md)
+- [`docs/public-api-demo-checklist.md`](docs/public-api-demo-checklist.md)
+
+Postman asset:
+- [`docs/postman/NutriMeals-Public-API.postman_collection.json`](docs/postman/NutriMeals-Public-API.postman_collection.json)
+- [`docs/postman/NutriMeals-Public-API.postman_environment.json`](docs/postman/NutriMeals-Public-API.postman_environment.json)
+
 ## API examples
 
-### Google sign in
+### Google sign-in
 
 ```bash
 curl -X POST http://localhost:4000/auth/google \
@@ -159,7 +174,7 @@ curl -X POST http://localhost:4000/auth/google \
   -d '{"idToken":"<GOOGLE_ID_TOKEN>"}'
 ```
 
-### Process scan (after uploading image)
+### Scan process
 
 ```bash
 curl -X POST http://localhost:4000/scan/process \
@@ -168,60 +183,44 @@ curl -X POST http://localhost:4000/scan/process \
   -d '{"imageUrl":"/uploads/sample.jpg"}'
 ```
 
-### Estimate nutrition
+### Public analyze-food
 
 ```bash
-curl -X POST http://localhost:4000/scan/estimate \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "items":[
-      {"name":"Nasi Goreng","normalizedKey":"nasi_goreng","unit":"plate","quantity":1},
-      {"name":"Ayam Goreng","normalizedKey":"ayam_goreng","unit":"piece","quantity":1}
-    ]
-  }'
+curl -X POST http://localhost:4000/api/public/v1/analyze-food \
+  -H "x-api-key: <NUTRIMEALS_PUBLIC_KEY>" \
+  -F "image=@/path/to/food.jpg"
 ```
 
 ## Testing
-
-Run all tests:
 
 ```bash
 pnpm test
 ```
 
-Included tests:
+Termasuk test untuk:
+- conversion logic
+- nutrition estimation
+- dashboard aggregation
+- confidence/formatter guardrails
+- critical auth behavior
 
-- Portion conversion logic
-- Nutrition calculation logic
-- Daily summary aggregation logic
-- Auth service critical behavior
-- Nutrition estimation fallback behavior
+## Google OAuth setup
 
-## Google OAuth setup (required)
-
-1. Create Google OAuth credentials in Google Cloud Console:
-- Web client ID (for Next.js)
-- Android client ID (for Expo Android)
-- iOS client ID (if using iOS native mobile)
-
-2. Configure backend (`apps/api/.env`):
-- `GOOGLE_OAUTH_CLIENT_IDS` as comma-separated allowed audiences (all client IDs above)
-
-Example:
+1. Buat OAuth client IDs di Google Cloud (web/android/iOS sesuai kebutuhan)
+2. Isi backend:
 
 ```env
 GOOGLE_OAUTH_CLIENT_IDS=web_client_id.apps.googleusercontent.com,android_client_id.apps.googleusercontent.com,ios_client_id.apps.googleusercontent.com
 ```
 
-3. Configure web (`apps/web/.env.local`):
+3. Isi web:
 
 ```env
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=web_client_id.apps.googleusercontent.com
 NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
 ```
 
-4. Configure mobile (`apps/mobile/.env`):
+4. Isi mobile:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:4000
@@ -231,28 +230,16 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=ios_client_id.apps.googleusercontent.com
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=web_client_id.apps.googleusercontent.com
 ```
 
-## Optional dependency choices
+## MVP limitations
 
-- Real AI provider is optional in MVP:
-  - Why optional: faster delivery while preserving adapter architecture.
-  - Current default behavior (`AI_PROVIDER=heuristic`): image-dependent heuristic results with strict no-food/uncertain branching.
-  - `AI_PROVIDER=mock_fixed` is explicit demo-only mode.
-- Cloud object storage is optional in MVP:
-  - Why optional: local development simplicity.
-  - Current behavior: local disk storage through abstraction.
+- Hasil nutrisi tetap estimasi
+- Akurasi portion bergantung kualitas gambar dan inferensi model
+- Tidak mencakup barcode/OCR/wearable/chat coach/subscription di MVP
 
-## MVP limitations (intentional)
-
-- Heuristic provider is not model-grade computer vision
-- Portion conversion uses generic defaults when exact food-density mapping is unavailable
-- No barcode/OCR/wearables/chat coach/subscriptions in MVP
-
-## Android installable app note
-
-This repo provides Expo Android app foundation. For APK:
+## Android APK (Expo)
 
 ```bash
 eas build -p android --profile preview
 ```
 
-(Requires Expo/EAS account and config.)
+(Perlu akun Expo/EAS)
