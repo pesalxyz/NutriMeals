@@ -25,17 +25,17 @@ export class FoodRecognitionService {
 
   private resolveProvider() {
     const configured = (process.env.AI_PROVIDER ?? 'auto').toLowerCase();
-    const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY?.trim());
+    const hasLlmKey = Boolean(process.env.LLM_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
 
     if (configured === 'openai') {
-      if (!hasOpenAIKey) {
-        throw new InternalServerErrorException('AI_PROVIDER=openai requires OPENAI_API_KEY.');
+      if (!hasLlmKey) {
+        throw new InternalServerErrorException('AI_PROVIDER=openai requires LLM_API_KEY or OPENAI_API_KEY.');
       }
       return this.openAIProvider;
     }
     if (configured === 'mock_fixed') return this.mockProvider;
     if (configured === 'auto') {
-      return hasOpenAIKey ? this.openAIProvider : this.heuristicProvider;
+      return hasLlmKey ? this.openAIProvider : this.heuristicProvider;
     }
     return this.heuristicProvider;
   }

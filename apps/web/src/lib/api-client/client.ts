@@ -1,6 +1,6 @@
 import { getToken } from '../auth/session';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
+const API_BASE_URL = resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? getToken() : null;
@@ -17,7 +17,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     });
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error('Gagal terhubung ke server. Pastikan API berjalan lalu coba lagi.');
+      throw new Error(`Gagal terhubung ke server (${API_BASE_URL}). Pastikan API berjalan lalu coba lagi.`);
     }
     throw error;
   }
@@ -34,4 +34,16 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   }
 
   return (await res.json()) as T;
+}
+
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
+}
+
+function resolveApiBaseUrl(raw?: string): string {
+  const value = (raw ?? '').trim();
+  if (!value) return 'http://localhost:4000';
+  if (/^https?:\/\//i.test(value)) return value.replace(/\/+$/, '');
+  if (value.startsWith('/')) return value.replace(/\/+$/, '');
+  return `https://${value.replace(/\/+$/, '')}`;
 }

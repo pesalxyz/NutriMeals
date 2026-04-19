@@ -1,4 +1,5 @@
 import type { ScanProcessResponse } from '../contracts';
+import { getApiBaseUrl } from './client';
 import { apiFetch } from './client';
 
 export interface EditableItemInput {
@@ -37,7 +38,7 @@ export async function uploadImage(file: File) {
   const form = new FormData();
   form.append('image', file);
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000'}/scan/upload-image`, {
+  const res = await fetch(`${getApiBaseUrl()}/scan/upload-image`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: form

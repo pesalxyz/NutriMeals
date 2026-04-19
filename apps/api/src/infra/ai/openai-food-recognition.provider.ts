@@ -17,13 +17,13 @@ export class OpenAIFoodRecognitionProvider implements FoodRecognitionProvider {
   name = 'openai_vision';
 
   async analyze(imagePath: string, _imageUrl: string): Promise<VisionAnalysisResult> {
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    const apiKey = process.env.LLM_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim();
     if (!apiKey) {
       return {
         isFoodCandidate: false,
         overallConfidence: 0,
         predictions: [],
-        reason: 'OPENAI_API_KEY is not configured.'
+        reason: 'LLM_API_KEY/OPENAI_API_KEY is not configured.'
       };
     }
 
@@ -32,7 +32,11 @@ export class OpenAIFoodRecognitionProvider implements FoodRecognitionProvider {
       const dataUrl = `data:${mimeFromExtension(imagePath)};base64,${imageBuffer.toString('base64')}`;
 
       const body = {
-        model: process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini',
+        model:
+          process.env.LLM_VISION_MODEL?.trim() ||
+          process.env.OPENAI_VISION_MODEL?.trim() ||
+          process.env.LLM_MODEL?.trim() ||
+          'gpt-4.1-mini',
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -49,7 +53,7 @@ export class OpenAIFoodRecognitionProvider implements FoodRecognitionProvider {
         ]
       };
 
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await fetch(resolveChatCompletionsUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,4 +138,9 @@ function mimeFromExtension(pathname: string): string {
   if (ext === '.png') return 'image/png';
   if (ext === '.webp') return 'image/webp';
   return 'image/jpeg';
+}
+
+function resolveChatCompletionsUrl(): string {
+  const base = (process.env.LLM_BASE_URL?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  return `${base}/chat/completions`;
 }
