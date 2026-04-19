@@ -113,8 +113,8 @@ a {
 
 h1, h2, h3, h4, .brand-title, .section-head__title {
   font-family: 'Outfit', sans-serif;
-  letter-spacing: -0.02em;
-  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-weight: 600;
 }
 
 .small {
@@ -140,7 +140,7 @@ h1, h2, h3, h4, .brand-title, .section-head__title {
   border-radius: var(--r-md);
   padding: 12px 20px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: #000;
   background: var(--brand-gradient);
   cursor: pointer;
@@ -222,11 +222,10 @@ a:focus-visible {
 }
 
 .cta-button {
-  min-height: 54px;
-  font-size: 16px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  min-height: 50px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   box-shadow: 
     0 12px 30px rgba(34, 197, 94, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -290,9 +289,8 @@ a:focus-visible {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  will-change: transform;
-  animation: shimmer 2.5s infinite linear;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  /* Completely removed infinite shimmer mapping to fix massive memory and CPU lag */
 }
 
 @keyframes shimmer {
@@ -355,9 +353,9 @@ a:focus-visible {
 
 .kpi p {
   margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: #fff;
 }
 
@@ -426,10 +424,10 @@ a:focus-visible {
 }
 
 .hero-card h1, .hero-card .section-head__title {
-  font-size: 46px;
+  font-size: 32px;
   color: #fff;
-  text-shadow: 0 0 24px rgba(6, 182, 212, 0.3);
-  font-weight: 800;
+  text-shadow: 0 0 24px rgba(6, 182, 212, 0.2);
+  font-weight: 700;
 }
 
 .split {
@@ -449,12 +447,16 @@ a:focus-visible {
   padding: 48px 32px;
 }
 
+.auth-logo {
+  margin-inline: auto;
+}
+
 .brand-title {
   margin: 0;
-  font-size: clamp(34px, 7vw, 56px);
-  line-height: 1.1;
-  letter-spacing: -0.04em;
-  font-weight: 800;
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 700;
   background: linear-gradient(to right, #fff, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -482,9 +484,9 @@ a:focus-visible {
 
 .section-head__title {
   margin: 0;
-  font-size: 34px;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   color: #fff;
 }
 
@@ -506,13 +508,12 @@ a:focus-visible {
   top: 16px;
   z-index: 50;
   
-  /* ONLY HERE WE KEEP BLUR - Because it's sticky and small */
-  background: rgba(14, 21, 38, 0.8);
-  backdrop-filter: blur(12px); 
+  background: rgba(10, 14, 23, 0.98);
+  /* Completely removed backdrop-filter due to scroll lag */
   
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 .top-nav__links {
@@ -549,6 +550,21 @@ a:focus-visible {
   gap: 12px;
 }
 
+.brand-header__logo {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.brand-full {
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .brand-header__icon {
   width: 36px;
   height: 36px;
@@ -572,12 +588,19 @@ a:focus-visible {
   color: #fff;
 }
 
+.brand-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+}
+
 .scan-overlay {
   position: absolute;
   inset: 16px;
   border-radius: 16px;
-  background: rgba(14, 21, 38, 0.7);
-  backdrop-filter: blur(4px); /* Keeping light blur for scan mask realism */
+  background: rgba(10, 14, 23, 0.85);
+  /* Removed heavy backdrop-filter to save framerate */
   display: grid;
   place-items: center;
   border: 1px solid rgba(6, 182, 212, 0.3);
@@ -591,7 +614,7 @@ a:focus-visible {
   top: 0;
   height: 4px;
   background: linear-gradient(90deg, transparent, #22c55e, #06b6d4, transparent);
-  will-change: transform, opacity;
+  /* Removed will-change memory hog */
   animation: scanMove 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   box-shadow: 0 0 16px #06b6d4;
 }
@@ -616,7 +639,7 @@ a:focus-visible {
   border-radius: 999px;
   border: 3px solid rgba(255,255,255,0.1);
   border-top-color: #06b6d4;
-  will-change: transform;
+  /* Removed will-change */
   animation: spin 1s linear infinite;
 }
 
@@ -690,10 +713,10 @@ a:focus-visible {
 }
 
 .calorie-value {
-  margin: 12px 0 16px;
-  font-size: 48px;
-  line-height: 1;
-  font-weight: 800;
+  margin: 8px 0 12px;
+  font-size: 36px;
+  line-height: 1.1;
+  font-weight: 700;
   color: #fff;
   text-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
 }
@@ -883,4 +906,3 @@ a:focus-visible {
   .brand-title { font-size: 40px; }
   .calorie-value { font-size: 36px; }
 }
-

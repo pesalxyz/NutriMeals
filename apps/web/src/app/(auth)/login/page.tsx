@@ -84,11 +84,10 @@ export default function LoginPage() {
     <main className="auth-wrap">
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={() => setScriptReady(true)} />
       <section className="card glass auth-card">
-        <BrandLogo variant="full" />
-        <p className="small auth-tagline">Scan. Eat. Know.</p>
-        <p className="small auth-copy">Analisis nutrisi makanan berbasis AI dengan hasil yang bisa diedit.</p>
+        <BrandLogo variant="full" className="auth-logo" />
+        <p className="small auth-copy">Analisis nutrisi makanan berbasis AI dengan sekali foto.</p>
         <hr className="subtle-divider" />
-        <p className="small auth-copy">Masuk dengan akun Google yang email-nya sudah terverifikasi.</p>
+        <p className="small auth-copy">Masuk dengan akun Google.</p>
         <div className="row">
           <div ref={buttonRef} />
           {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && !scriptReady ? (
