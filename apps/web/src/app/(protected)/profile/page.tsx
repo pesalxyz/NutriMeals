@@ -45,9 +45,24 @@ export default function ProfilePage() {
     getProfile()
       .then((res) => {
         if (res.profile) {
+          const {
+            fullName,
+            age,
+            gender,
+            weightKg,
+            heightCm,
+            activityLevel,
+            goal
+          } = res.profile;
           setForm((cur) => ({
             ...cur,
-            ...(res.profile as Omit<FormState, 'targetCalories' | 'targetProtein' | 'targetCarbs' | 'targetFat'>)
+            fullName,
+            age,
+            gender,
+            weightKg,
+            heightCm,
+            activityLevel,
+            goal
           }));
         }
         if (res.goal) {
@@ -106,7 +121,20 @@ export default function ProfilePage() {
 
   async function handleSaveProfile() {
     try {
-      const res = await upsertProfile(form);
+      const payload = {
+        fullName: form.fullName,
+        age: form.age,
+        gender: form.gender,
+        weightKg: form.weightKg,
+        heightCm: form.heightCm,
+        activityLevel: form.activityLevel,
+        goal: form.goal,
+        targetCalories: form.targetCalories,
+        targetProtein: form.targetProtein,
+        targetCarbs: form.targetCarbs,
+        targetFat: form.targetFat
+      };
+      const res = await upsertProfile(payload);
       if (res?.goal) {
         setForm((cur) => ({
           ...cur,
