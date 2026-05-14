@@ -896,35 +896,39 @@ a:focus-visible {
   .split { grid-template-columns: 1fr; }
   .hero-card { padding: 32px 24px; }
   .top-nav {
-    border-radius: var(--r-lg);
-    gap: 10px;
-    padding: 10px 12px;
+    border-radius: 14px;
+    gap: 8px;
+    padding: 8px 10px;
+    top: 8px;
   }
   .top-nav__links {
     margin-left: 0;
     justify-content: flex-start;
     width: 100%;
+    flex-wrap: nowrap;
     overflow-x: auto;
-    white-space: nowrap;
-    gap: 8px;
-    padding-bottom: 2px;
+    gap: 6px;
+    padding-bottom: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .top-nav__links::-webkit-scrollbar {
+    display: none;
   }
   .top-nav__link {
-    padding: 8px 10px;
+    flex: 0 0 auto;
+    padding: 6px 10px;
     font-size: 12px;
   }
-  .brand-logo--header .brand-logo__mark {
-    width: 26px;
-    height: 26px;
-  }
-  .brand-logo--header .brand-logo__word {
-    font-size: 18px;
+  .top-nav .brand-header__logo {
+    height: 30px;
   }
   .nav-logout {
     margin-left: auto;
-    min-height: 34px;
-    padding-inline: 10px;
+    min-height: 30px;
+    padding-inline: 8px;
     font-size: 12px;
+    flex: 0 0 auto;
   }
   .form-grid-2, .action-row { grid-template-columns: 1fr; display: grid; }
   .w-168 { width: 100%; }

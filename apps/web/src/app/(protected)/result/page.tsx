@@ -159,9 +159,8 @@ export default function ResultPage() {
 
       <Card className="row glass">
         <div className="meta-row">
-          <p className="list-card__title m-0">{mode === 'uncertain' ? 'Kemungkinan makanan terdeteksi' : 'Makanan terdeteksi'}</p>
+          <p className="list-card__title m-0">{mode === 'uncertain' ? 'Kemungkinan Hasil Identifikasi Makanan' : 'Hasil Identifikasi Makanan'}</p>
         </div>
-        <p className="small m-0">{toIndonesianText(message)}</p>
         {displayNotes.map((note, index) => (
           <p key={`${note}-${index}`} className="small m-0">{note}</p>
         ))}
@@ -283,6 +282,13 @@ function buildDetectedNarrative(message: string, notes: string[], description: s
   const cleaned = merged
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
+    .filter((line) => {
+      const lower = line.toLowerCase();
+      if (lower === 'nutrisi diestimasi dari analisis ai terhadap deskripsi makanan.') return false;
+      if (lower.includes('makanan campur terdeteksi dari analisis gambar')) return false;
+      if (lower.includes('makanan campuran terdeteksi') && lower.includes('nutrisi diestimasi')) return false;
+      return true;
+    })
     .filter((line) => !looksLikeEnglish(line));
 
   if (!cleaned.length) {
