@@ -15,5 +15,8 @@ export function getProfile() {
 }
 
 export function upsertProfile(payload: ProfilePayload) {
-  return apiFetch('/profile', { method: 'PUT', body: JSON.stringify(payload) });
+  return apiFetch<{
+    profile: ProfileInput;
+    goal: { calories: number; protein: number; carbs: number; fat: number };
+  }>('/profile', { method: 'PUT', body: JSON.stringify(payload) });
 }

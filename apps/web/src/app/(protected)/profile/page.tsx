@@ -104,6 +104,24 @@ export default function ProfilePage() {
     setStatus('Target harian digenerate otomatis');
   }
 
+  async function handleSaveProfile() {
+    try {
+      const res = await upsertProfile(form);
+      if (res?.goal) {
+        setForm((cur) => ({
+          ...cur,
+          targetCalories: Math.round(res.goal.calories),
+          targetProtein: Math.round(res.goal.protein),
+          targetCarbs: Math.round(res.goal.carbs),
+          targetFat: Math.round(res.goal.fat)
+        }));
+      }
+      setStatus('profil berhasil disimpan');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Gagal menyimpan profil');
+    }
+  }
+
   return (
     <main className="stack">
       <AppNav />
@@ -176,10 +194,7 @@ export default function ProfilePage() {
 
         <Button
           className="cta-button"
-          onClick={async () => {
-            await upsertProfile(form);
-            setStatus('Tersimpan');
-          }}
+          onClick={handleSaveProfile}
         >
           Simpan profil
         </Button>
