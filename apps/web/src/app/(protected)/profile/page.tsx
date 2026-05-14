@@ -64,6 +64,46 @@ export default function ProfilePage() {
       .catch(() => undefined);
   }, []);
 
+  function generateTargetHarian() {
+    const bmr =
+      form.gender === 'male'
+        ? 10 * form.weightKg + 6.25 * form.heightCm - 5 * form.age + 5
+        : form.gender === 'female'
+          ? 10 * form.weightKg + 6.25 * form.heightCm - 5 * form.age - 161
+          : 10 * form.weightKg + 6.25 * form.heightCm - 5 * form.age - 78;
+
+    const activityFactor: Record<FormState['activityLevel'], number> = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      very_active: 1.9
+    };
+
+    const tdee = bmr * activityFactor[form.activityLevel];
+    const caloriesBase =
+      form.goal === 'lose_weight'
+        ? tdee - 400
+        : form.goal === 'gain_weight'
+          ? tdee + 300
+          : tdee;
+
+    const calories = clamp(Math.round(caloriesBase), 1200, 4200);
+    const proteinMultiplier = form.goal === 'lose_weight' ? 1.8 : form.goal === 'gain_weight' ? 1.7 : 1.6;
+    const protein = clamp(Math.round(form.weightKg * proteinMultiplier), 60, 260);
+    const fat = clamp(Math.round((calories * 0.25) / 9), 35, 140);
+    const carbs = clamp(Math.round((calories - protein * 4 - fat * 9) / 4), 80, 520);
+
+    setForm((cur) => ({
+      ...cur,
+      targetCalories: calories,
+      targetProtein: protein,
+      targetCarbs: carbs,
+      targetFat: fat
+    }));
+    setStatus('Target harian digenerate otomatis');
+  }
+
   return (
     <main className="stack">
       <AppNav />
@@ -118,6 +158,7 @@ export default function ProfilePage() {
         </Field>
 
         <h3 className="section-title-sm mt-8">Target harian (dapat diubah)</h3>
+        <Button variant="secondary" onClick={generateTargetHarian}>Generate target harian otomatis</Button>
         <div className="form-grid-2">
           <Field label="Kalori harian">
             <input className="input" type="number" value={form.targetCalories} onChange={(e) => setForm((cur) => ({ ...cur, targetCalories: Number(e.target.value) }))} />
@@ -142,8 +183,12 @@ export default function ProfilePage() {
         >
           Simpan profil
         </Button>
-        {status && <p className="small m-0">Profil berhasil disimpan.</p>}
+        {status && <p className="small m-0">{status}.</p>}
       </Card>
     </main>
   );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

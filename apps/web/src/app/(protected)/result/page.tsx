@@ -7,6 +7,7 @@ import { estimateScan } from '../../../lib/api-client/scan';
 import type { EditableItemInput } from '../../../lib/api-client/scan';
 import { saveMeal } from '../../../lib/api-client/meals';
 import type { ScanProcessResponse } from '../../../lib/contracts';
+import { getApiBaseUrl } from '../../../lib/api-client/client';
 import { Card } from '../../../components/ui/card';
 import { SectionHeader } from '../../../components/ui/section-header';
 import { Badge } from '../../../components/ui/badge';
@@ -17,7 +18,7 @@ type Editable = {
   name: string;
   normalizedKey?: string;
   unit: 'gram' | 'piece' | 'bowl' | 'plate' | 'cup' | 'tablespoon' | 'teaspoon';
-  quantity: number;
+  quantity: number | '';
   confidence?: number;
 };
 
@@ -33,7 +34,6 @@ export default function ResultPage() {
   const [estimatedItems, setEstimatedItems] = useState<Array<{ isEstimated: boolean; gramsResolved: number; nutrition: { calories: number; protein: number; carbs: number; fat: number; sugar: number; fiber: number; sodium: number } }>>([]);
   const [mode, setMode] = useState<'success' | 'uncertain'>('success');
   const [message, setMessage] = useState('');
-  const [mealType, setMealType] = useState<ScanProcessResponse['mealType']>('unclear');
   const [notes, setNotes] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [uncertaintyNotes, setUncertaintyNotes] = useState<string[]>([]);
@@ -41,7 +41,7 @@ export default function ResultPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [actionError, setActionError] = useState('');
   const sugarTotal = estimatedItems.reduce((sum, item) => sum + item.nutrition.sugar, 0);
-  const displayNotes = dedupeLines([description, ...notes]);
+  const displayNotes = buildDetectedNarrative(message, notes, description);
 
   useEffect(() => {
     const raw = sessionStorage.getItem('nutriscan_scan_result');
@@ -57,10 +57,9 @@ export default function ResultPage() {
     }
 
     setScanId(parsed.scanId);
-    setImageUrl(parsed.imageUrl);
+    setImageUrl(toAbsoluteImageUrl(parsed.imageUrl));
     setMode(parsed.status);
     setMessage(parsed.message);
-    setMealType(parsed.mealType);
     setNotes(parsed.notes);
     setDescription(parsed.description ?? '');
     setUncertaintyNotes(parsed.uncertaintyNotes ?? []);
@@ -161,14 +160,13 @@ export default function ResultPage() {
       <Card className="row glass">
         <div className="meta-row">
           <p className="list-card__title m-0">{mode === 'uncertain' ? 'Kemungkinan makanan terdeteksi' : 'Makanan terdeteksi'}</p>
-          <Badge tone={mode === 'uncertain' ? 'warning' : 'success'}>{mealTypeLabel(mealType)}</Badge>
         </div>
-        <p className="small m-0">{message}</p>
+        <p className="small m-0">{toIndonesianText(message)}</p>
         {displayNotes.map((note, index) => (
           <p key={`${note}-${index}`} className="small m-0">{note}</p>
         ))}
         {uncertaintyNotes.map((note, index) => (
-          <p key={`u-${note}-${index}`} className="small m-0">Catatan: {note}</p>
+          <p key={`u-${note}-${index}`} className="small m-0">Catatan: {toIndonesianText(note)}</p>
         ))}
         <p className="small note-warn">
           Catatan: Jika hasil scanner kurang akurat, coba scan ulang untuk hasil yang lebih baik.
@@ -204,7 +202,22 @@ export default function ResultPage() {
               </button>
             </div>
             <div className="comp-input-row">
-              <input className="input" type="number" value={item.quantity} onChange={(e) => setItems((cur) => cur.map((it, i) => i === index ? { ...it, quantity: Number(e.target.value) } : it))} />
+              <input
+                className="input"
+                type="number"
+                inputMode="decimal"
+                value={item.quantity}
+                onChange={(e) =>
+                  setItems((cur) =>
+                    cur.map((it, i) => {
+                      if (i !== index) return it;
+                      const raw = e.target.value;
+                      if (raw.trim() === '') return { ...it, quantity: '' };
+                      return { ...it, quantity: Number(raw) };
+                    })
+                  )
+                }
+              />
               <select className="select" value={item.unit} onChange={(e) => setItems((cur) => cur.map((it, i) => i === index ? { ...it, unit: e.target.value as Editable['unit'] } : it))}>
                 {UNITS.map((u) => <option key={u} value={u}>{unitLabel(u)}</option>)}
               </select>
@@ -250,17 +263,6 @@ function unitLabel(unit: Editable['unit']): string {
   return map[unit];
 }
 
-function mealTypeLabel(value: ScanProcessResponse['mealType']): string {
-  const map: Record<ScanProcessResponse['mealType'], string> = {
-    mixed_plate: 'piring campur',
-    single_item: 'satu item',
-    packaged_food: 'makanan kemasan',
-    drink: 'minuman',
-    unclear: 'belum jelas'
-  };
-  return map[value] ?? value.replace('_', ' ');
-}
-
 function dedupeLines(lines: string[]): string[] {
   const out: string[] = [];
   for (const line of lines) {
@@ -276,6 +278,19 @@ function dedupeLines(lines: string[]): string[] {
   return out.slice(0, 6);
 }
 
+function buildDetectedNarrative(message: string, notes: string[], description: string): string[] {
+  const merged = dedupeLines([message, ...notes, description]).map((line) => toIndonesianText(line));
+  const cleaned = merged
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .filter((line) => !looksLikeEnglish(line));
+
+  if (!cleaned.length) {
+    return ['Komponen makanan sudah terdeteksi dari foto. Silakan cek lalu sesuaikan porsinya bila diperlukan.'];
+  }
+  return cleaned.slice(0, 3);
+}
+
 function normalizeItems(items: Editable[]): EditableItemInput[] {
   return items
     .map((item) => ({
@@ -285,4 +300,37 @@ function normalizeItems(items: Editable[]): EditableItemInput[] {
       quantity: Number(item.quantity)
     }))
     .filter((item) => item.name.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
+}
+
+function toAbsoluteImageUrl(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${getApiBaseUrl()}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+function toIndonesianText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/This image does not appear to contain recognizable food\./gi, 'Gambar ini tidak terlihat mengandung makanan yang bisa dikenali.')
+    .replace(/Nutrition is estimated from AI analysis of the meal description\./gi, 'Nutrisi diestimasi dari analisis AI terhadap deskripsi makanan.')
+    .replace(/Mixed meal detected\. Nutrition is estimated from visible components\./gi, 'Makanan campuran terdeteksi. Nutrisi diestimasi dari komponen yang terlihat.')
+    .replace(/Portions are estimated from a single image\./gi, 'Porsi dihitung berdasarkan satu foto.')
+    .replace(/Please confirm for better accuracy\./gi, 'Silakan konfirmasi agar hasil lebih akurat.')
+    .replace(/Visible candidates:/gi, 'Kandidat terlihat:')
+    .replace(/The image shows/gi, 'Foto menampilkan')
+    .replace(/contains/gi, 'berisi')
+    .replace(/detected/gi, 'terdeteksi')
+    .replace(/\bimage\b/gi, 'foto')
+    .replace(/\bbowl\b/gi, 'mangkuk')
+    .replace(/\bplate\b/gi, 'piring');
+}
+
+function looksLikeEnglish(text: string): boolean {
+  const lower = text.toLowerCase();
+  const markers = [' the ', ' with ', ' and ', ' image ', ' appears ', ' visible ', ' candidate ', ' detected '];
+  let hit = 0;
+  for (const marker of markers) {
+    if (lower.includes(marker)) hit += 1;
+  }
+  return hit >= 2;
 }
